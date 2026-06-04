@@ -4,7 +4,7 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 
 @Data
-@Builders
+
 @NoArgsConstructor
 @AllArgsConstructor
 public class RegisterRequest {
