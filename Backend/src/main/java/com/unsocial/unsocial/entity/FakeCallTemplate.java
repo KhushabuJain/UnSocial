@@ -23,7 +23,7 @@ public class FakeCallTemplate {
     @Column(name = "caller_name", nullable = false)
     private String callerName;
 
-    @Column(name = "caller_phone")
+    @Column(name = "caller_phone",unique = true,nullable = false)
     private String callerPhone;
 
     // Delay in seconds before the fake call rings (0 = immediate)

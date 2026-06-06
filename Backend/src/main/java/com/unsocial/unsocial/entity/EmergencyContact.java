@@ -23,10 +23,10 @@ public class EmergencyContact {
     @Column(name = "contact_name", nullable = false)
     private String name;
 
-    @Column(nullable = false)
+    @Column(unique = true,nullable = false)
     private String phone;
 
-    @Column
+    @Column(unique = true,nullable = false)
     private String email;
 
     @Column(nullable = false)

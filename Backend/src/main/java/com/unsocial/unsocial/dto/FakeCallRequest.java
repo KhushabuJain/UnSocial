@@ -14,7 +14,7 @@ public class FakeCallRequest {
     private String callerName;
 
     @Pattern(
-            regexp = "^([+]?[0-9]{10,15})?$",
+            regexp = "^([+]?[0-9]{10})?$",
             message = "Invalid phone number format"
     )
     private String callerPhone;

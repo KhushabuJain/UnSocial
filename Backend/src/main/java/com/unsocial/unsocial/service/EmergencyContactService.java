@@ -20,7 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class EmergencyContactService {
 
-    private static final int MAX_CONTACTS = 5;
+    private static final int MAX_CONTACTS = 10;
 
     private final EmergencyContactRepository contactRepository;
     private final UserRepository userRepository;
@@ -28,6 +28,7 @@ public class EmergencyContactService {
     // ──────────────────────────────────────────────
     // Create
     // ──────────────────────────────────────────────
+
 
 
 
@@ -61,6 +62,9 @@ public class EmergencyContactService {
                 .isPrimary(autoPrimary)
                 .notifyOnSos(request.isNotifyOnSos())
                 .build();
+
+
+
 
         EmergencyContact saved = contactRepository.save(contact);
         log.info("Added emergency contact [{}] for user [{}]", saved.getId(), userEmail);
@@ -109,6 +113,7 @@ public class EmergencyContactService {
         contact.setRelationship(request.getRelationship());
         contact.setPrimary(request.isPrimary());
         contact.setNotifyOnSos(request.isNotifyOnSos());
+
 
         EmergencyContact updated = contactRepository.save(contact);
         log.info("Updated emergency contact [{}] for user [{}]", contactId, userEmail);

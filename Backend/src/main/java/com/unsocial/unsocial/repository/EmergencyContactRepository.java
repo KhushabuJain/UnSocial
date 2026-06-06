@@ -20,11 +20,20 @@ public interface EmergencyContactRepository extends JpaRepository<EmergencyConta
     int countByUserId(Long userId);
 
     // Check if user already has a primary contact
-    boolean existsByUserIdAndIsPrimaryTrue(Long userId);
+   // boolean existsByUserIdAndIsPhone(Long userId,String Phone);
+    boolean existsByUserIdAndPhone(
+            Long userId,
+            String phone
+
+    );
 
     // Get primary contact for SOS
     Optional<EmergencyContact> findByUserIdAndIsPrimaryTrue(Long userId);
 
     // All contacts that want SOS notifications
     List<EmergencyContact> findByUserIdAndNotifyOnSosTrue(Long userId);
+
+    //boolean existsByUserIdAndPhone(Long userId, String phone);
+
+
 }

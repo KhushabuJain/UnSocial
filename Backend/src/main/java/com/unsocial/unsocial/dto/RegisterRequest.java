@@ -27,8 +27,8 @@ public class RegisterRequest {
 
     @NotBlank(message = "Phone number is required")
     @Pattern(
-            regexp = "^[+]?[0-9]{10,15}$",
-            message = "Please provide a valid phone number (10-15 digits)"
+            regexp = "^[+]?[0-9]{10}$",
+            message = "Please provide a valid phone number (10 digits)"
     )
     private String phone;
 }

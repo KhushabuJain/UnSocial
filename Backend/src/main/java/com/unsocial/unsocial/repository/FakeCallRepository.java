@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,7 +22,15 @@ public interface FakeCallRepository extends JpaRepository<FakeCallTemplate, Long
     long countByUserId(Long userId);
 
     // Unset all defaults for a user before setting a new one
+//    @Modifying
+//    @Query("UPDATE FakeCallTemplate f SET f.isDefault = false WHERE f.user.id = :userId")
+//    void clearDefaultForUser(Long userId);
+
     @Modifying
-    @Query("UPDATE FakeCallTemplate f SET f.isDefault = false WHERE f.user.id = :userId")
-    void clearDefaultForUser(Long userId);
+    @Query("""
+    UPDATE FakeCallTemplate f
+    SET f.isDefault = false
+    WHERE f.user.id = :userId
+""")
+    void clearDefaultForUser(@Param("userId") Long userId);
 }

@@ -15,7 +15,7 @@ public class EmergencyContactRequest {
 
     @NotBlank(message = "Phone number is required")
     @Pattern(
-            regexp = "^[+]?[0-9]{10,15}$",
+            regexp = "^[+]?[0-9]{10}$",
             message = "Please provide a valid phone number"
     )
     private String phone;
