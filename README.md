@@ -1,78 +1,152 @@
-\# UnSocial
+# UnSocial
 
+## Project Overview
 
+UnSocial is a personal safety and social escape platform designed to help users discreetly exit uncomfortable situations and access emergency assistance when needed. The platform combines safety-focused features with social assistance tools to provide users with quick and reliable support during emergencies or uncomfortable social interactions.
 
-\## Project Overview
+## Problem Statement
 
+Many individuals encounter situations where they feel unsafe, uncomfortable, or require immediate assistance but cannot openly ask for help. Traditional safety applications primarily focus on emergency response and often overlook everyday social challenges that people face.
 
+## Solution
 
-UnSocial is a personal safety and social escape platform designed to help users discreetly exit uncomfortable situations and access emergency assistance when needed.
+UnSocial addresses these challenges through a collection of safety and assistance features:
 
+* Fake Message Generator
+* Emergency Contact Management
+* SOS Alert System
+* Safety Timer
+* Live Location Sharing
+* User Authentication and Secure Access
 
+## Features Implemented
 
-\## Problem Statement
+### Authentication Module
 
+* User Registration
+* User Login
+* JWT-Based Authentication
+* Secure API Access
 
+### Emergency Contacts Module
 
-Many individuals face social discomfort, unsafe situations, or emergencies where they cannot openly ask for help. Existing solutions focus mainly on emergency response and do not address everyday social challenges.
+* Add Emergency Contact
+* View Emergency Contacts
+* Update Contact Information
+* Delete Contacts
 
+### Fake Message Module
 
+* Create Fake Message Templates
+* View Saved Templates
+* Delete Templates
 
-\## Solution
+### User Management
 
+* User Profile Management
+* Account Settings
 
+## Technology Stack
 
-UnSocial provides:
+### Frontend
 
+* React.js
+* TypeScript
+* Tailwind CSS
+* Axios
+* React Router
 
+### Backend
 
-\- Fake Call Generator
+* Java
+* Spring Boot
+* Spring Security
+* JWT Authentication
+* Maven
 
-\- Fake Message Generator
+### Database
 
-\- SOS Alert System
+* MySQL
 
-\- Safety Timer
+## Project Architecture
 
-\- Emergency Contacts
+```text
+Frontend (React)
+        |
+        v
+REST APIs
+        |
+        v
+Spring Boot Backend
+        |
+        v
+MySQL Database
+```
 
-\- Live Location Sharing
+## Project Status
 
+### Completed
 
+* Backend Development
+* Database Design
+* Authentication System
+* Emergency Contacts Module
+* Fake Message Module
+* API Testing with Postman
 
-\## Technology Stack
+### In Progress
 
+* Frontend Development
+* UI/UX Design
+* API Integration
 
+## Getting Started
 
-\### Frontend
+### Backend Setup
 
-\- React
+```bash
+git clone <repository-url>
+cd unsocial
+mvn spring-boot:run
+```
 
-\- TypeScript
+Backend will run on:
 
-\- Tailwind CSS
+```text
+http://localhost:8080
+```
 
+### Frontend Setup
 
+```bash
+cd unsocial-frontend
+npm install
+npm run dev
+```
 
-\### Backend
+Frontend will run on:
 
-\- Java
+```text
+http://localhost:5173
+```
 
-\- Spring Boot
+## API Base URL
 
-\- Spring Security
+```text
+http://localhost:8085/api
+```
 
+## Future Enhancements
 
+* Fake Call Generator
+* Real-Time SOS Notifications
+* Live Location Tracking
+* Mobile Application
+* Push Notifications
+* AI-Based Safety Recommendations
 
-\### Database
+## Author
 
-\- MySQL
+Khushabu Jain
 
-
-
-\## Project Status
-
-
-
-Planning and Architecture Phase
-
+GitHub: https://github.com/KhushabuJain
