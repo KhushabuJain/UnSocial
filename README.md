@@ -113,7 +113,7 @@ mvn spring-boot:run
 Backend will run on:
 
 ```text
-http://localhost:8080
+http://localhost:8085
 ```
 
 ### Frontend Setup
