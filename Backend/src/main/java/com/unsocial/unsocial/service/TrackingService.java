@@ -23,7 +23,7 @@ public class TrackingService {
     private final TrackingSessionRepository trackingSessionRepository;
     private final SecurityUtils securityUtils;
 
-    @Value("${app.base-url:http://localhost:8080}")
+    @Value("${app.base-url:http://localhost:8085}")
     private String baseUrl;
 
     // ──────────────────────────────────────────────
@@ -139,7 +139,7 @@ public class TrackingService {
 
     private TrackingResponse toResponse(TrackingSession s) {
         String mapsLink = "https://maps.google.com?q=" + s.getCurrentLatitude() + "," + s.getCurrentLongitude();
-        String shareLink = baseUrl + "/api/tracking/share/" + s.getShareToken();
+        String shareLink = baseUrl.replace(":8080", ":5173") + "/track/" + s.getShareToken();
 
         return TrackingResponse.builder()
                 .id(s.getId())
