@@ -3,6 +3,7 @@ package com.unsocial.unsocial.service;
 import com.unsocial.unsocial.dto.*;
 import com.unsocial.unsocial.entity.*;
 import com.unsocial.unsocial.exception.ResourceNotFoundException;
+import com.unsocial.unsocial.repository.EmergencyContactRepository;
 import com.unsocial.unsocial.repository.SafetyTimerRepository;
 import com.unsocial.unsocial.util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
@@ -21,9 +22,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SafetyTimerService {
 
-    private final SafetyTimerRepository safetyTimerRepository;
-    private final NotificationService notificationService;
-    private final SecurityUtils securityUtils;
+    private final SafetyTimerRepository       safetyTimerRepository;
+    private final EmergencyContactRepository  contactRepository;
+    private final NotificationService         notificationService;
+    private final SecurityUtils               securityUtils;
 
     // ──────────────────────────────────────────────
     // Start Timer
@@ -33,13 +35,10 @@ public class SafetyTimerService {
     public SafetyTimerResponse startTimer(SafetyTimerRequest request) {
         User user = securityUtils.getCurrentUser();
 
-        // Only one active timer allowed at a time
         safetyTimerRepository.findByUserIdAndStatus(user.getId(), TimerStatus.ACTIVE)
                 .ifPresent(t -> {
                     throw new IllegalStateException(
-                            "You already have an active safety timer (ID: " + t.getId() +
-                                    "). Check in or cancel it before starting a new one."
-                    );
+                            "You already have an active safety timer (ID: " + t.getId() + ").");
                 });
 
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(request.getDurationMinutes());
@@ -53,12 +52,12 @@ public class SafetyTimerService {
                 .build();
 
         safetyTimerRepository.save(timer);
-        log.info("Safety timer started for user {} — expires at {}", user.getEmail(), expiresAt);
+        log.info("⏱️ Safety timer started for {} — expires at {}", user.getEmail(), expiresAt);
         return toResponse(timer);
     }
 
     // ──────────────────────────────────────────────
-    // Check In (user is safe)
+    // Check In (safe before expiry)
     // ──────────────────────────────────────────────
 
     @Transactional
@@ -79,7 +78,7 @@ public class SafetyTimerService {
     }
 
     // ──────────────────────────────────────────────
-    // Cancel Timer
+    // Cancel
     // ──────────────────────────────────────────────
 
     @Transactional
@@ -94,8 +93,6 @@ public class SafetyTimerService {
         timer.setStatus(TimerStatus.CANCELLED);
         timer.setCompletedAt(LocalDateTime.now());
         safetyTimerRepository.save(timer);
-
-        log.info("Safety timer {} cancelled by user {}", timerId, userId);
         return toResponse(timer);
     }
 
@@ -105,10 +102,10 @@ public class SafetyTimerService {
 
     public SafetyTimerResponse getActiveTimer() {
         Long userId = securityUtils.getCurrentUserId();
-        SafetyTimer timer = safetyTimerRepository
-                .findByUserIdAndStatus(userId, TimerStatus.ACTIVE)
-                .orElseThrow(() -> new ResourceNotFoundException("No active safety timer found"));
-        return toResponse(timer);
+        return toResponse(
+                safetyTimerRepository.findByUserIdAndStatus(userId, TimerStatus.ACTIVE)
+                        .orElseThrow(() -> new ResourceNotFoundException("No active safety timer found"))
+        );
     }
 
     public List<SafetyTimerResponse> getTimerHistory() {
@@ -118,9 +115,8 @@ public class SafetyTimerService {
     }
 
     // ──────────────────────────────────────────────
-    // Scheduler — runs every 30 seconds
-    // Finds ACTIVE timers that have passed their expiresAt and marks them EXPIRED.
-    // Sends emergency notification to contacts.
+    // Scheduler — fires every 30 seconds
+    // Finds expired ACTIVE timers → notifies contacts via email + SMS
     // ──────────────────────────────────────────────
 
     @Scheduled(fixedDelay = 30_000)
@@ -131,7 +127,7 @@ public class SafetyTimerService {
 
         if (expired.isEmpty()) return;
 
-        log.warn("⏰ Found {} expired safety timer(s) — triggering alerts", expired.size());
+        log.warn("⏰ Found {} expired safety timer(s)", expired.size());
 
         for (SafetyTimer timer : expired) {
             timer.setStatus(TimerStatus.EXPIRED);
@@ -140,17 +136,16 @@ public class SafetyTimerService {
 
             User user = timer.getUser();
 
-            log.warn("🚨 Safety timer EXPIRED for user {} — sending alerts", user.getEmail());
+            // Fetch emergency contacts and send REAL notifications
+            List<NotificationService.ContactInfo> contacts = contactRepository
+                    .findByUserId(user.getId())
+                    .stream()
+                    .map(c -> new NotificationService.ContactInfo(c.getName(), c.getPhone(), c.getEmail()))
+                    .collect(Collectors.toList());
 
-            // Notify contacts that the timer expired without check-in
-            notificationService.notifySosTriggered(
-                    user,
-                    buildFakeSosForTimer(timer, user),
-                    0  // TODO: inject EmergencyContactRepository and count contacts
-            );
+            notificationService.notifyTimerExpired(user, timer.getNote(), contacts);
 
-            // TODO: Optionally auto-trigger a SOS alert by calling SosService.triggerSos()
-            //       Be careful to avoid circular dependency — use ApplicationContext or events.
+            log.warn("🚨 Timer expired for {} — {} contact(s) notified", user.getEmail(), contacts.size());
         }
     }
 
@@ -177,17 +172,6 @@ public class SafetyTimerService {
                 .remainingSeconds(remaining)
                 .startedAt(t.getCreatedAt())
                 .completedAt(t.getCompletedAt())
-                .build();
-    }
-
-    /** Builds a minimal SosAlert object just for passing to NotificationService */
-    private com.unsocial.unsocial.entity.SosAlert buildFakeSosForTimer(SafetyTimer timer, User user) {
-        return com.unsocial.unsocial.entity.SosAlert.builder()
-                .user(user)
-                .latitude(0.0)
-                .longitude(0.0)
-                .message("⏰ Safety timer expired without check-in! " +
-                        (timer.getNote() != null ? "Note: " + timer.getNote() : ""))
                 .build();
     }
 }

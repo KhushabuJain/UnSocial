@@ -3,6 +3,7 @@ package com.unsocial.unsocial.service;
 import com.unsocial.unsocial.dto.*;
 import com.unsocial.unsocial.entity.*;
 import com.unsocial.unsocial.exception.ResourceNotFoundException;
+import com.unsocial.unsocial.repository.EmergencyContactRepository;
 import com.unsocial.unsocial.repository.SosAlertRepository;
 import com.unsocial.unsocial.util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
@@ -19,9 +20,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SosService {
 
-    private final SosAlertRepository sosAlertRepository;
-    private final NotificationService notificationService;
-    private final SecurityUtils securityUtils;
+    private final SosAlertRepository         sosAlertRepository;
+    private final EmergencyContactRepository  contactRepository;
+    private final NotificationService         notificationService;
+    private final SecurityUtils               securityUtils;
 
     // ──────────────────────────────────────────────
     // Trigger SOS
@@ -31,13 +33,12 @@ public class SosService {
     public SosAlertResponse triggerSos(SosAlertRequest request) {
         User user = securityUtils.getCurrentUser();
 
-        // Only one active SOS allowed at a time
+        // Only one active SOS at a time
         sosAlertRepository.findByUserIdAndStatus(user.getId(), SosStatus.ACTIVE)
                 .ifPresent(existing -> {
                     throw new IllegalStateException(
                             "You already have an active SOS alert (ID: " + existing.getId() +
-                                    "). Please resolve or cancel it before triggering a new one."
-                    );
+                                    "). Please resolve it before triggering a new one.");
                 });
 
         SosAlert alert = SosAlert.builder()
@@ -51,17 +52,14 @@ public class SosService {
 
         sosAlertRepository.save(alert);
 
-        // ── Notify emergency contacts ──
-        // TODO: Replace hardcoded count with actual contact lookup from EmergencyContact module:
-        //   int count = emergencyContactRepository.countByUserId(user.getId());
-        //   notificationService.notifySosTriggered(user, alert, count);
-        int contactsNotified = 0; // update once EmergencyContact repo is injected
-        notificationService.notifySosTriggered(user, alert, contactsNotified);
+        // ── Fetch real emergency contacts and notify ──
+        List<NotificationService.ContactInfo> contacts = getContactInfoList(user.getId());
+        int notified = notificationService.notifySosTriggered(user, alert, contacts);
 
-        alert.setContactsNotified(contactsNotified);
+        alert.setContactsNotified(notified);
         sosAlertRepository.save(alert);
 
-        log.warn("🚨 SOS triggered — user: {}, alertId: {}", user.getEmail(), alert.getId());
+        log.warn("🚨 SOS triggered by {} — {} contact(s) notified", user.getEmail(), notified);
         return toResponse(alert);
     }
 
@@ -71,29 +69,25 @@ public class SosService {
 
     public SosAlertResponse getActiveSos() {
         Long userId = securityUtils.getCurrentUserId();
-        SosAlert alert = sosAlertRepository
-                .findByUserIdAndStatus(userId, SosStatus.ACTIVE)
-                .orElseThrow(() -> new ResourceNotFoundException("No active SOS alert found"));
-        return toResponse(alert);
+        return toResponse(
+                sosAlertRepository.findByUserIdAndStatus(userId, SosStatus.ACTIVE)
+                        .orElseThrow(() -> new ResourceNotFoundException("No active SOS alert found"))
+        );
     }
 
     public List<SosAlertResponse> getSosHistory() {
         Long userId = securityUtils.getCurrentUserId();
-        return sosAlertRepository
-                .findByUserIdOrderByCreatedAtDesc(userId)
-                .stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return sosAlertRepository.findByUserIdOrderByCreatedAtDesc(userId)
+                .stream().map(this::toResponse).collect(Collectors.toList());
     }
 
     public SosAlertResponse getSosById(Long alertId) {
         Long userId = securityUtils.getCurrentUserId();
-        SosAlert alert = findOwned(alertId, userId);
-        return toResponse(alert);
+        return toResponse(findOwned(alertId, userId));
     }
 
     // ──────────────────────────────────────────────
-    // Update Location (during active SOS)
+    // Update Location (user is moving)
     // ──────────────────────────────────────────────
 
     @Transactional
@@ -107,13 +101,10 @@ public class SosService {
 
         alert.setLatitude(request.getLatitude());
         alert.setLongitude(request.getLongitude());
-        if (request.getAddress() != null) {
-            alert.setAddress(request.getAddress());
-        }
+        if (request.getAddress() != null) alert.setAddress(request.getAddress());
 
         sosAlertRepository.save(alert);
-        log.info("📍 Location updated for SOS {} — [{}, {}]",
-                alertId, request.getLatitude(), request.getLongitude());
+        log.info("📍 Location updated for SOS {} → [{}, {}]", alertId, request.getLatitude(), request.getLongitude());
         return toResponse(alert);
     }
 
@@ -134,8 +125,11 @@ public class SosService {
         alert.setResolvedAt(LocalDateTime.now());
         sosAlertRepository.save(alert);
 
-        notificationService.notifySosResolved(alert.getUser(), alert);
-        log.info("✅ SOS {} resolved by user {}", alertId, userId);
+        // Notify contacts that user is safe
+        List<NotificationService.ContactInfo> contacts = getContactInfoList(userId);
+        notificationService.notifySosResolved(alert.getUser(), alert, contacts);
+
+        log.info("✅ SOS {} resolved — contacts notified", alertId);
         return toResponse(alert);
     }
 
@@ -156,8 +150,7 @@ public class SosService {
         alert.setResolvedAt(LocalDateTime.now());
         sosAlertRepository.save(alert);
 
-        notificationService.notifySosCancelled(alert.getUser(), alert);
-        log.info("❌ SOS {} cancelled (false alarm) by user {}", alertId, userId);
+        log.info("❌ SOS {} cancelled (false alarm)", alertId);
         return toResponse(alert);
     }
 
@@ -165,9 +158,16 @@ public class SosService {
     // Helpers
     // ──────────────────────────────────────────────
 
-    private SosAlert findOwned(Long alertId, Long userId) {
-        return sosAlertRepository.findByIdAndUserId(alertId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("SOS alert not found with id: " + alertId));
+    private SosAlert findOwned(Long id, Long userId) {
+        return sosAlertRepository.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("SOS alert not found with id: " + id));
+    }
+
+    private List<NotificationService.ContactInfo> getContactInfoList(Long userId) {
+        return contactRepository.findByUserId(userId)
+                .stream()
+                .map(c -> new NotificationService.ContactInfo(c.getName(), c.getPhone(), c.getEmail()))
+                .collect(Collectors.toList());
     }
 
     private SosAlertResponse toResponse(SosAlert alert) {

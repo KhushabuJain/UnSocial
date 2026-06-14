@@ -22,6 +22,8 @@
 	</properties>
 
 	<dependencies>
+
+
 		<!-- Spring Boot Core -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -97,6 +99,20 @@
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- Email Support -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
+
+		<!-- Twilio SMS -->
+		<dependency>
+			<groupId>com.twilio.sdk</groupId>
+			<artifactId>twilio</artifactId>
+			<version>10.6.4</version>
+		</dependency>
+
+
 	</dependencies>
 
 	<build>

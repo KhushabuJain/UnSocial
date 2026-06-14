@@ -45,7 +45,7 @@ public class AuthService {
 
         // Build and save the user
         User user = User.builder()
-                .name(request.getFullName())
+                .fullName(request.getFullName())
                 .email(request.getEmail().toLowerCase().trim())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .phone(request.getPhone())
@@ -62,7 +62,7 @@ public class AuthService {
         return AuthResponse.of(
                 token,
                 user.getEmail(),
-                user.getName(),
+                user.getFullName(),
                 user.getRole().name(),
                 "Registration successful! Welcome to UnSocial."
         );
@@ -96,7 +96,7 @@ public class AuthService {
         return AuthResponse.of(
                 token,
                 user.getEmail(),
-                user.getName(),
+                user.getFullName(),
                 user.getRole().name(),
                 "Login successful"
         );

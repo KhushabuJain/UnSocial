@@ -27,7 +27,7 @@ public class EmergencyContactRequest {
     @Size(max = 50, message = "Relationship must be under 50 characters")
     private String relationship;
 
-    private boolean isPrimary = false;
+    private boolean isPrimary;
 
     private boolean notifyOnSos = true;
 }

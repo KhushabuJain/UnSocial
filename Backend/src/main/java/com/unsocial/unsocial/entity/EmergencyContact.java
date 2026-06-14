@@ -4,6 +4,10 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
+/**
+ * Stores emergency contacts for a user.
+ * These people receive real email + SMS alerts on SOS or timer expiry.
+ */
 @Entity
 @Table(name = "emergency_contacts")
 @Data
@@ -20,17 +24,18 @@ public class EmergencyContact {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "contact_name", nullable = false)
+    @Column(nullable = false)
     private String name;
 
-    @Column(unique = true,nullable = false)
+    @Column(nullable = false)
     private String phone;
 
-    @Column(unique = true,nullable = false)
+    // Email for real alert notifications
+    @Column
     private String email;
 
-    @Column(nullable = false)
-    private String relationship;  // e.g. "Father", "Friend", "Sister"
+    @Column
+    private String relationship;
 
     @Column(name = "is_primary")
     @Builder.Default

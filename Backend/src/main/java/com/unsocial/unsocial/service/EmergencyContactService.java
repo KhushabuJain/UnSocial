@@ -38,7 +38,7 @@ public class EmergencyContactService {
         User user = getUser(userEmail);
 
         // Enforce max contacts limit
-        int count = contactRepository.countByUserId(user.getId());
+        Long count = contactRepository.countByUserId(user.getId());
         if (count >= MAX_CONTACTS) {
             throw new IllegalArgumentException(
                     "Maximum " + MAX_CONTACTS + " emergency contacts allowed"

@@ -2,73 +2,112 @@ package com.unsocial.unsocial.service;
 
 import com.unsocial.unsocial.entity.SosAlert;
 import com.unsocial.unsocial.entity.User;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
- * Handles push notifications to emergency contacts.
- *
- * Current implementation: logs to console.
- * TODO: Replace log calls with Firebase Cloud Messaging (FCM) API calls.
- *       Each contact should receive a push notification with the user's
- *       name, location link, and custom message.
+ * Central notification orchestrator.
+ * Sends real email + SMS (optional) to emergency contacts on SOS / timer expiry.
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class NotificationService {
 
+    private final EmailService emailService;
+    private final SmsService   smsService;
+
+    @Value("${notification.email.enabled:true}")
+    private boolean emailEnabled;
+
+    // ──────────────────────────────────────────────
+    // SOS Triggered
+    // ──────────────────────────────────────────────
+
     /**
-     * Notify all emergency contacts of the user about an active SOS.
-     *
-     * @param user     the user in distress
-     * @param alert    the SOS alert (contains location + message)
-     * @param contacts number of contacts to notify (from EmergencyContact module)
+     * Notify all emergency contacts that the user triggered an SOS.
+     * contacts = list of [name, phone, email] for each emergency contact.
      */
-    public void notifySosTriggered(User user, SosAlert alert, int contacts) {
+    public int notifySosTriggered(User user, SosAlert alert, List<ContactInfo> contacts) {
+        if (contacts == null || contacts.isEmpty()) {
+            log.warn("No emergency contacts found for user {} — nobody to notify!", user.getEmail());
+            return 0;
+        }
+
         String mapsLink = buildMapsLink(alert.getLatitude(), alert.getLongitude());
 
-        log.warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        log.warn("🚨 SOS ALERT TRIGGERED");
-        log.warn("👤 User     : {} ({})", user.getName(), user.getEmail());
-        log.warn("📍 Location : {}", mapsLink);
-        if (alert.getAddress() != null) {
-            log.warn("🏠 Address  : {}", alert.getAddress());
-        }
-        if (alert.getMessage() != null) {
-            log.warn("💬 Message  : {}", alert.getMessage());
-        }
-        log.warn("📱 Notifying {} emergency contact(s)", contacts);
-        log.warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        for (ContactInfo contact : contacts) {
+            log.warn("🚨 Notifying {} ({}) about SOS from {}", contact.name(), contact.phone(), user.getFullName());
 
-        // ─── Firebase integration goes here ───────────────────────────
-        // for (EmergencyContact contact : contacts) {
-        //     fcmService.sendNotification(
-        //         contact.getFcmToken(),
-        //         "🚨 " + user.getFullName() + " needs help!",
-        //         "Tap to see their location",
-        //         Map.of("mapsLink", mapsLink, "alertId", alert.getId().toString())
-        //     );
-        // }
-        // ──────────────────────────────────────────────────────────────
+            // Real email
+            if (emailEnabled && contact.email() != null && !contact.email().isBlank()) {
+                emailService.sendSosAlert(
+                        contact.email(),
+                        contact.name(),
+                        user.getFullName(),
+                        mapsLink,
+                        null,
+                        alert.getMessage(),
+                        alert.getCreatedAt()
+                );
+            }
+
+            // Real SMS
+            smsService.sendSosAlert(contact.phone(), contact.name(),
+                    user.getFullName(), mapsLink, alert.getMessage());
+        }
+
+        log.warn("🚨 SOS notifications dispatched to {} contact(s) for user {}", contacts.size(), user.getEmail());
+        return contacts.size();
     }
 
-    /**
-     * Notify contacts that the user is now safe (SOS resolved).
-     */
-    public void notifySosResolved(User user, SosAlert alert) {
-        log.info("✅ SOS RESOLVED — {} is safe. Alert ID: {}", user.getName(), alert.getId());
+    // ──────────────────────────────────────────────
+    // SOS Resolved
+    // ──────────────────────────────────────────────
 
-        // TODO: Send FCM "User is safe" notification to emergency contacts
+    public void notifySosResolved(User user, SosAlert alert, List<ContactInfo> contacts) {
+        if (contacts == null || contacts.isEmpty()) return;
+
+        for (ContactInfo contact : contacts) {
+            if (emailEnabled && contact.email() != null && !contact.email().isBlank()) {
+                emailService.sendSosResolvedEmail(
+                        contact.email(),
+                        user.getFullName(),
+                        buildMapsLink(alert.getLatitude(), alert.getLongitude()),
+                        contacts.size()
+                );
+            }
+            smsService.sendResolvedAlert(contact.phone(), contact.name(), user.getFullName());
+        }
+        log.info("✅ Resolved notifications sent to {} contact(s)", contacts.size());
     }
 
-    /**
-     * Notify contacts that the SOS was a false alarm (cancelled).
-     */
-    public void notifySosCancelled(User user, SosAlert alert) {
-        log.info("❌ SOS CANCELLED (false alarm) — User: {}, Alert ID: {}",
-                user.getName(), alert.getId());
+    // ──────────────────────────────────────────────
+    // Safety Timer Expired
+    // ──────────────────────────────────────────────
 
-        // TODO: Send FCM "False alarm" notification to emergency contacts
+    public void notifyTimerExpired(User user, String note, List<ContactInfo> contacts) {
+        if (contacts == null || contacts.isEmpty()) {
+            log.warn("No emergency contacts for user {} — timer expired with nobody to notify", user.getEmail());
+            return;
+        }
+
+        for (ContactInfo contact : contacts) {
+            if (emailEnabled && contact.email() != null && !contact.email().isBlank()) {
+                emailService.sendTimerExpiredEmail(
+                        contact.email(),
+                        contact.name(),
+                        user.getFullName(),
+                        note
+                );
+            }
+            smsService.sendTimerExpiredAlert(contact.phone(), contact.name(), user.getFullName(), note);
+        }
+        log.warn("⏰ Timer expired notifications sent to {} contact(s) for user {}", contacts.size(), user.getEmail());
     }
 
     // ──────────────────────────────────────────────
@@ -76,6 +115,13 @@ public class NotificationService {
     // ──────────────────────────────────────────────
 
     public String buildMapsLink(Double lat, Double lng) {
+        if (lat == null || lng == null) return "Location not available";
         return "https://maps.google.com?q=" + lat + "," + lng;
     }
+
+    // ──────────────────────────────────────────────
+    // ContactInfo record (passed by SosService)
+    // ──────────────────────────────────────────────
+
+    public record ContactInfo(String name, String phone, String email) {}
 }
