@@ -31,6 +31,11 @@ public class FakeCallTemplate {
     @Builder.Default
     private int delaySeconds = 0;
 
+    // Which built-in ringtone to play on the frontend when this call rings
+    @Column(name = "ringtone")
+    @Builder.Default
+    private String ringtone = "classic";
+
     @Column(name = "is_default")
     @Builder.Default
     private boolean isDefault = false;

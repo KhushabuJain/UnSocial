@@ -14,6 +14,7 @@ public class FakeCallResponse {
     private String callerName;
     private String callerPhone;
     private int delaySeconds;
+    private String ringtone;
     private boolean isDefault;
     private LocalDateTime createdAt;
 }

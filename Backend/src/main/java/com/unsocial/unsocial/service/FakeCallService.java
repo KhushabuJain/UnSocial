@@ -49,6 +49,7 @@ public class FakeCallService {
                 .callerName(request.getCallerName().trim())
                 .callerPhone(request.getCallerPhone())
                 .delaySeconds(request.getDelaySeconds() != null ? request.getDelaySeconds() : 0)
+                .ringtone(request.getRingtone() != null ? request.getRingtone() : "classic")
                 .isDefault(request.isMakeDefault())
                 .build();
 
@@ -91,6 +92,7 @@ public class FakeCallService {
         template.setCallerName(request.getCallerName().trim());
         template.setCallerPhone(request.getCallerPhone());
         template.setDelaySeconds(request.getDelaySeconds() != null ? request.getDelaySeconds() : 0);
+        template.setRingtone(request.getRingtone() != null ? request.getRingtone() : "classic");
         template.setDefault(request.isMakeDefault());
 
         fakeCallRepository.save(template);
@@ -161,6 +163,7 @@ public class FakeCallService {
         return TriggerCallResponse.builder()
                 .callerName(template.getCallerName())
                 .callerPhone(template.getCallerPhone())
+                .ringtone(template.getRingtone())
                 .delaySeconds(delay)
                 .triggeredAt(LocalDateTime.now())
                 .status(delay == 0 ? "IMMEDIATE" : "SCHEDULED")
@@ -184,6 +187,7 @@ public class FakeCallService {
                 .callerName(template.getCallerName())
                 .callerPhone(template.getCallerPhone())
                 .delaySeconds(template.getDelaySeconds())
+                .ringtone(template.getRingtone())
                 .isDefault(template.isDefault())
                 .createdAt(template.getCreatedAt())
                 .build();

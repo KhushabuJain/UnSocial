@@ -27,11 +27,11 @@ public class EmergencyContact {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String phone;
 
     // Email for real alert notifications
-    @Column
+    @Column(unique = true)
     private String email;
 
     @Column
@@ -41,7 +41,7 @@ public class EmergencyContact {
     @Builder.Default
     private boolean isPrimary = false;
 
-    @Column(name = "notify_on_sos")
+    @Column(name = "notify_on_sos"  , nullable = false, columnDefinition = "TINYINT(1) DEFAULT 1")
     @Builder.Default
     private boolean notifyOnSos = true;
 
@@ -62,3 +62,5 @@ public class EmergencyContact {
         updatedAt = LocalDateTime.now();
     }
 }
+
+

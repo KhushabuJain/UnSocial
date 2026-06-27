@@ -34,7 +34,7 @@ public class EmailService {
     // ──────────────────────────────────────────────
 
     @Async
-    public void sendSosAlert(
+    public void sendSosAlertToContact(
             String toEmail,
             String contactName,
             String userName,
@@ -70,7 +70,7 @@ public class EmailService {
     // ──────────────────────────────────────────────
 
     @Async
-    public void sendSosResolvedEmail(
+    public void sendSosConfirmationToUser(
             String toEmail,
             String userName,
             String mapsLink,
@@ -96,11 +96,40 @@ public class EmailService {
     }
 
     // ──────────────────────────────────────────────
+    // SOS Resolved Email to Emergency Contact
+    // ("All clear" — sent to the CONTACT, not the user)
+    // ──────────────────────────────────────────────
+
+    @Async
+    public void sendSosResolvedToContact(String toEmail, String contactName, String userName) {
+        if (!emailEnabled) {
+            log.info("[EMAIL DISABLED] Would have sent 'resolved' alert to {}", toEmail);
+            return;
+        }
+
+        try {
+            MimeMessage mime = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mime, true, "UTF-8");
+
+            helper.setFrom(fromEmail, appName + " Safety");
+            helper.setTo(toEmail);
+            helper.setSubject("✅ " + userName + " is safe now");
+            helper.setText(buildResolvedToContactHtml(contactName, userName), true);
+
+            mailSender.send(mime);
+            log.info("📧 Resolved alert sent to contact {}", toEmail);
+
+        } catch (Exception e) {
+            log.error("❌ Failed to send resolved email to {}: {}", toEmail, e.getMessage());
+        }
+    }
+
+    // ──────────────────────────────────────────────
     // Timer Expired Email
     // ──────────────────────────────────────────────
 
     @Async
-    public void sendTimerExpiredEmail(
+    public void sendTimerExpiredAlert(
             String toEmail,
             String contactName,
             String userName,
@@ -130,17 +159,17 @@ public class EmailService {
     // ──────────────────────────────────────────────
 
     private String buildSosEmailHtml(String contactName, String userName, String mapsLink,
-                                      String address, String message, LocalDateTime time) {
+                                     String address, String message, LocalDateTime time) {
         String timeStr = time != null
                 ? time.format(DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mm a"))
                 : "Just now";
         String addressRow = address != null
                 ? "<tr><td style='padding:6px 0;color:#6b7280;font-size:14px;'>📍 Address</td>"
-                + "<td style='padding:6px 0;font-size:14px;font-weight:500;'>" + address + "</td></tr>"
+                  + "<td style='padding:6px 0;font-size:14px;font-weight:500;'>" + address + "</td></tr>"
                 : "";
         String messageRow = message != null
                 ? "<tr><td style='padding:6px 0;color:#6b7280;font-size:14px;'>💬 Message</td>"
-                + "<td style='padding:6px 0;font-size:14px;font-style:italic;'>\"" + message + "\"</td></tr>"
+                  + "<td style='padding:6px 0;font-size:14px;font-style:italic;'>\"" + message + "\"</td></tr>"
                 : "";
 
         return """
@@ -197,7 +226,7 @@ public class EmailService {
             </body>
             </html>
             """.formatted(appName, contactName, userName,
-                    addressRow, timeStr, messageRow, mapsLink, appName, userName);
+                addressRow, timeStr, messageRow, mapsLink, appName, userName);
     }
 
     private String buildConfirmationEmailHtml(String userName, String mapsLink, int contactsNotified) {
@@ -225,6 +254,27 @@ public class EmailService {
               </div>
             </body></html>
             """.formatted(userName, contactsNotified, mapsLink);
+    }
+
+    private String buildResolvedToContactHtml(String contactName, String userName) {
+        return """
+            <!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
+            <body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif;">
+              <div style="max-width:580px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;">
+                <div style="background:#16a34a;padding:28px;text-align:center;">
+                  <div style="font-size:40px;margin-bottom:6px;">✅</div>
+                  <h1 style="color:#fff;font-size:20px;margin:0;">All Clear</h1>
+                </div>
+                <div style="padding:28px;">
+                  <p style="font-size:15px;color:#111827;">Hi <strong>%s</strong>,</p>
+                  <p style="font-size:14px;color:#374151;line-height:1.6;">
+                    <strong>%s</strong> has marked themselves as safe and resolved their SOS alert.
+                    No further action is needed — thank you for being part of their safety network.
+                  </p>
+                </div>
+              </div>
+            </body></html>
+            """.formatted(contactName, userName);
     }
 
     private String buildTimerExpiredHtml(String contactName, String userName, String note) {

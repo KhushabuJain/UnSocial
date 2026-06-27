@@ -23,6 +23,13 @@ public class FakeCallRequest {
     @Max(value = 3600, message = "Delay cannot exceed 1 hour (3600 seconds)")
     @Builder.Default
     private Integer delaySeconds = 0;
+    @Pattern(
+            regexp = "^(classic|pulse|chime|digital)$",
+            message = "Ringtone must be one of: classic, pulse, chime, digital"
+    )
+    @Builder.Default
+    private String ringtone = "classic";
+
 
     @Builder.Default
     private boolean makeDefault = false;

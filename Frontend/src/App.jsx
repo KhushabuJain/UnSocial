@@ -8,6 +8,7 @@ import FakeMessagePage     from './pages/fakemessage/FakeMessagePage.jsx'
 import SosPage             from './pages/sos/SosPage.jsx'
 import TrackingPage        from './pages/tracking/TrackingPage.jsx'
 import TimerPage           from './pages/timer/TimerPage.jsx'
+import ChatbotPage         from './pages/chatbot/ChatbotPage.jsx'
 import PublicTrackingPage  from './pages/tracking/TrackingPage.jsx'
 import AppLayout           from './components/layout/AppLayout.jsx'
 import ProtectedRoute      from './routes/ProtectedRoute.jsx'
@@ -30,6 +31,8 @@ export default function App() {
                     <Route path="/sos"          element={<SosPage />} />
                     <Route path="/tracking"     element={<TrackingPage />} />
                     <Route path="/timer"        element={<TimerPage />} />
+                <Route path="/assistant"    element={<ChatbotPage />} />
+
                 </Route>
             </Route>
 

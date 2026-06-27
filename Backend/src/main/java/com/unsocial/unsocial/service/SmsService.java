@@ -136,13 +136,13 @@ public class SmsService {
     // Helper — ensure phone has country code
     // ──────────────────────────────────────────────
 
-    private String normalizePhone(String Phone) {
-        if (Phone == null) return Phone;
-        Phone = Phone.trim().replaceAll("[\\s-()]", "");
+    private String normalizePhone(String phone) {
+        if (phone == null) return phone;
+        phone = phone.trim().replaceAll("[\\s-()]", "");
         // Add India country code (+91) if no country code present
-        if (!Phone.startsWith("+")) {
-            Phone = "+91" + Phone;
+        if (!phone.startsWith("+")) {
+            phone = "+91" + phone;
         }
-        return Phone;
+        return phone;
     }
 }

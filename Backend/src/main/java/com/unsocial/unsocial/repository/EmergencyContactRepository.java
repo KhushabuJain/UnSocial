@@ -26,6 +26,9 @@ public interface EmergencyContactRepository
 
     Optional<EmergencyContact>
     findByUserIdAndIsPrimaryTrue(Long userId);
+
+    // Only the contacts who opted in to SOS/timer-expiry notifications
+    List<EmergencyContact> findByUserIdAndNotifyOnSosTrue(Long userId);
 }
 //@Repository
 //public interface EmergencyContactRepository extends JpaRepository<EmergencyContact, Long> {

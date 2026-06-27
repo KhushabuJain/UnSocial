@@ -15,9 +15,9 @@ const icons = {
 export default function Alert({ type = 'info', message, className = '' }) {
   if (!message) return null
   return (
-    <div className={`flex items-start gap-3 p-3.5 rounded-xl text-sm font-medium animate-fade-in ${styles[type]} ${className}`}>
-      <span className="flex-shrink-0 font-bold">{icons[type]}</span>
-      <span>{message}</span>
-    </div>
+      <div className={`flex items-start gap-3 p-3.5 rounded-xl text-sm font-medium animate-fade-in ${styles[type]} ${className}`}>
+        <span className="flex-shrink-0 font-bold">{icons[type]}</span>
+        <span>{message}</span>
+      </div>
   )
 }

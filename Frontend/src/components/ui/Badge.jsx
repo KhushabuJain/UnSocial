@@ -16,7 +16,7 @@ export default function Badge({ label, type = 'default' }) {
   const key = (label || type).toLowerCase()
   const cls = styles[key] || styles.default
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>
+      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>
       {label}
     </span>
   )
